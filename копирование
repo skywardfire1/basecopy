@@ -10,26 +10,20 @@ DESTDIR=/mnt/000/000/AccessBase
 # В этой переменной у нас будет день недели, по-русски, полным словом, без сокращения
 CATALOG=0`date +%u`_`date +%A`
 
+
 # Почему бы и не сформировать файл отчёта
 LOGFILE=/home/sa/logfile
 
-echo "Начинаем процедуру резервного копирования файлов базы. Дата: " `date` \n > $LOGFILE
+echo "Начинаем процедуру резервного копирования файлов базы. Дата:" `date +%A\,\ %x` > $LOGFILE
 
 # Сделаем всё двумя простыми циклами, таким образом достаточно добавить любое имя файла сюда, и он будет включен в работу
-mkdir $DESTDIR/$CATALOG # Сначала создаём каталог
 
-for n in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb ; do
+if ! [ -d $DESTDIR/$CATALOG ]; then mkdir $DESTDIR/$CATALOG ; fi # Сначала создаём каталог
 
-cp $SOURCEDIR/$n $DESTDIR/$CATALOG
-echo "Файл " $n " успешно скопирован в каталог " $CATALOG " на сервере." >> $LOGFILE
 
-done
-
-# Второй цикл
-mkdir $DESTDIR/$CATALOG\_OSPB # Сначала создаём каталог
-for n in OfficeSPB_be.mde OfficeSPB_CRM_be.mde MarketingOfficeSPB.mdb ; do
+for n in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde ; do
 
 cp $SOURCEDIR/$n $DESTDIR/$CATALOG
-echo "Файл " $n " успешно скопирован в каталог " $CATALOG " на сервере." >> $LOGFILE
+echo "Файл" $n "успешно скопирован в каталог" $CATALOG "на сервере." >> $LOGFILE
 
 done
