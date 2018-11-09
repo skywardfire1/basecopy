@@ -1,0 +1,15 @@
+#/bin/sh
+
+# Версия 0.8
+# Единственное, чего (пока) нет в этом скрипте -- это проверка монтирования директорий, и их монтирование в случае необходимости
+
+# Задаём исходную директорию и директорию назначения, в виде переменных, для удобства
+SOURCEDIR=/mnt/tmp/
+DESTDIR=/mnt/000/000/AccessBase/
+
+# Сделаем всё одним простым циклом, таким образом достаточно добавить любое имя файла сюда, и он будет включен в работу
+for n in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb OfficeSPB_be.mde OfficeSPB_CRM_be.mde MarketingOfficeSPB.mdb ; do
+
+cp $SOURCEDIR/$n $DESTDIR/$n 
+
+done
