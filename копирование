@@ -4,19 +4,32 @@
 # Единственное, чего (пока) нет в этом скрипте -- это проверка монтирования директорий, и их монтирование в случае необходимости
 
 # Задаём исходную директорию и директорию назначения, в виде переменных, для удобства
-SOURCEDIR=/mnt/tmp/
-DESTDIR=/mnt/000/000/AccessBase/
+SOURCEDIR=/mnt/tmp
+DESTDIR=/mnt/000/000/AccessBase
 
 # В этой переменной у нас будет день недели, по-русски, полным словом, без сокращения
 CATALOG=0`date +%u`_`date +%A`
 
 # Почему бы и не сформировать файл отчёта
-LOGFILE=/home/sa/copy_log
-echo > $LOGFILE
+LOGFILE=/home/sa/logfile
 
+echo "Начинаем процедуру резервного копирования файлов базы. Дата: " `date` \n > $LOGFILE
 
-# Сделаем всё одним простым циклом, таким образом достаточно добавить любое имя файла сюда, и он будет включен в работу
-for n in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb ; do cp $SOURCEDIR/$n $DESTDIR/$CATALOG done
+# Сделаем всё двумя простыми циклами, таким образом достаточно добавить любое имя файла сюда, и он будет включен в работу
+mkdir $DESTDIR/$CATALOG # Сначала создаём каталог
 
+for n in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb ; do
 
-for n in OfficeSPB_be.mde OfficeSPB_CRM_be.mde MarketingOfficeSPB.mdb ; do cp $SOURCEDIR/$n $DESTDIR/$CATALOG\_OSPB done
+cp $SOURCEDIR/$n $DESTDIR/$CATALOG
+echo "Файл " $n " успешно скопирован в каталог " $CATALOG " на сервере." >> $LOGFILE
+
+done
+
+# Второй цикл
+mkdir $DESTDIR/$CATALOG\_OSPB # Сначала создаём каталог
+for n in OfficeSPB_be.mde OfficeSPB_CRM_be.mde MarketingOfficeSPB.mdb ; do
+
+cp $SOURCEDIR/$n $DESTDIR/$CATALOG
+echo "Файл " $n " успешно скопирован в каталог " $CATALOG " на сервере." >> $LOGFILE
+
+done
