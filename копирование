@@ -1,29 +1,30 @@
 #/bin/sh
 
-# Версия 0.9
-# Единственное, чего (пока) нет в этом скрипте -- это проверка монтирования директорий, и их монтирование в случае необходимости
+# Версия 0.92
 
 # Задаём исходную директорию и директорию назначения, в виде переменных, для удобства
-SOURCEDIR=/mnt/tmp
-DESTDIR=/mnt/000/000/AccessBase
+SOURCEDIR=/mnt/ab
+DESTDIR=/srv/shares/ab
 
-# В этой переменной у нас будет день недели, по-русски, полным словом, без сокращения
+# Монтируем ресурс баз данных, если еще не смонтировано
+if [[ `mount|grep AccessBase` == '' ]] ; then mount $SOURCEDIR ; fi
+ 
+# В этой переменной у нас будет день недели, по-русски в формате "05_Пятница"
 CATALOG=0`date +%u`_`date +%A`
-
 
 # Почему бы и не сформировать файл отчёта
 LOGFILE=/home/sa/logfile
 
 echo "Начинаем процедуру резервного копирования файлов базы. Дата:" `date +%A\,\ %x` > $LOGFILE
 
-# Сделаем всё двумя простыми циклами, таким образом достаточно добавить любое имя файла сюда, и он будет включен в работу
+if [ -d $DESTDIR/$CATALOG ]; then rm -fr $DESTDIR/$CATALOG ; fi # Если каталог уже есть, то удаляем его, там неактуальная копия
 
-if ! [ -d $DESTDIR/$CATALOG ]; then mkdir $DESTDIR/$CATALOG ; fi # Сначала создаём каталог
-
+mkdir $DESTDIR/$CATALOG
 
 for n in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde ; do
-
-cp $SOURCEDIR/$n $DESTDIR/$CATALOG
-echo "Файл" $n "успешно скопирован в каталог" $CATALOG "на сервере." >> $LOGFILE
-
+  cp $SOURCEDIR/$n $DESTDIR/$CATALOG
+  echo "Файл" $n "успешно скопирован в каталог" $CATALOG "на сервере." >> $LOGFILE
 done
+
+cp -r $SOURCEDIR/Interface $DESTDIR/$CATALOG
+echo "Папка интерфейсы успешно скопирована." >> $LOGFILE
