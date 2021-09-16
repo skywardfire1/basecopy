@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Версия 0.94
+# Версия 0.99
 
 # ---------- ПЕРЕМЕННЫЕ ------------
 
@@ -14,7 +14,7 @@ DESTDIR=/srv/raid/base/0`date +%u`_`date +%A`
 LOGFILE=/var/log/backup/base_backup
 
 # И сразу пишем в него заголовок
-echo "Начинаем процедуру резервного копирования файлов базы. Дата:" `date +%A\,\ %x`  > $LOGFILE
+echo "Начинаем процедуру резервного копирования файлов базы. Дата:" `date +%A\,\ %x,\ %H:%M`  > $LOGFILE
 
 # Этот файл -- флаг для Zabbix, который будет содержать 1 в случае, если были какие-либо ошибки при копировании
 ZABBIX_FLAG=/var/log/backup/zabbix
@@ -34,11 +34,9 @@ else
 
 mkdir $DESTDIR
 
-echo $DESTDIR
-
 # Пробегаем скриптом сначала по файлам самой базы
-    for N in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde Interface/Admin.mdb  Interface/Log.mdb Interface/Marketing.mdb Interface/MarketN_CRM.mdb Interface/MarketN.mdb Interface/Shops.mdb Interface/Statistics.mdb ; do
-	# Если исходный файл вообще существует, то
+    for N in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde ; do
+    # Если исходный файл вообще существует, то
 	if [ -e $SOURCEDIR/$N ] ; then
 	    # Копируем его
             cp $SOURCEDIR/$N $DESTDIR
@@ -62,8 +60,9 @@ echo $DESTDIR
         fi
     done
 
-# Интерфейсы теперь
-# Задаём исходную директорию
+# Интерфейсы теперь обработаем
+
+# Меняем директории
 SOURCEDIR=$SOURCEDIR/Interface
 DESTDIR=$DESTDIR/Interface
 
@@ -83,20 +82,8 @@ mkdir $DESTDIR
                 echo "1" > $ZABBIX_FLAG
             fi
         else
-            echo "Файл" $N "не найден в исходной директории!" >> $LOGFILE
+            echo "Интерфейсный файл" $N "не найден в исходной директории!" >> $LOGFILE
             echo "1" > $ZABBIX_FLAG
         fi
     done
 fi
-
-
-
-# Контрольная сумма для интерфейсов не подсчитывается, может, сделаю это позже
-#  if [ -d $SOURCEDIR/Interface ] ; then
-#    cp -r $SOURCEDIR/Interface $DESTDIR
-#    echo "Папка интерфейсов успешно скопирована"  >> $LOGFILE
-#  else
-#    echo "Каталог интерфейсов не скопирован" >> $LOGFILE
-#    echo "1" > $ZABBIX_FLAG
-#  fi
-#fi
