@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Версия 0.94
+
+# ---------- ПЕРЕМЕННЫЕ ------------
+
+# Задаём исходную директорию и директорию назначения, в виде переменных, для удобства
+SOURCEDIR=/mnt/ab
+
+# В этой переменной у нас будет день недели, по-русски в формате "05_Пятница"
+DESTDIR=/srv/raid/base/0`date +%u`_`date +%A`
+
+# Почему бы и не сформировать файл отчёта
+LOGFILE=/var/log/backup/base_backup
+
+# И сразу пишем в него заголовок
+echo "Начинаем процедуру резервного копирования файлов базы. Дата:" `date +%A\,\ %x`  > $LOGFILE
+
+# Этот файл -- флаг для Zabbix, который будет содержать 1 в случае, если были какие-либо ошибки при копировании
+ZABBIX_FLAG=/var/log/backup/zabbix
+echo "0" > $ZABBIX_FLAG
+
+# ------------- КОД ---------------
+
+# Пробуем монтировать каталог базы данных, если еще не смонтировано
+if [[ `mount|grep AccessBase` == '' ]] ; then mount /mnt/ab ; fi
+
+# Если по-прежнему не смонтировано, создаём сообщение об ошибке для заббикса, и больше не делаем вообще ничего
+if [[ `mount|grep AccessBase` == '' ]] ; then
+    echo "Монтировать каталог базы не удалось" >> $LOGFILE
+    echo "1" > $ZABBIX_FLAG
+else
+    if [ -d $DESTDIR ]; then rm -fr $DESTDIR ; fi # Если каталог уже есть, то удаляем его, там неактуальная копия
+
+    mkdir $DESTDIR
+
+    for N in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde ; do
+	# Если исходный файл вообще существует, то
+	if [ -e $SOURCEDIR/$N ] ; then
+	    # Копируем его
+            cp $SOURCEDIR/$N $DESTDIR
+
+            # Считаем контрольную сумму исходного файла
+	    MD5SUM1=`md5sum -b $SOURCEDIR/$N | awk '{print $1}'`
+
+            # И его новой копии
+	    MD5SUM2=`md5sum -b $DESTDIR/$N | awk '{print $1}'`
+
+            # Сравниваем контрольные суммы, делаем соответствующие записи
+            if [[ $MD5SUM1 == $MD5SUM2 ]] ; then
+	        echo "Файл" $N "успешно скопирован в каталог" $DESTDIR "на сервере" >> $LOGFILE
+	    else
+	        echo "Контрольные суммы файлов не совпадают!" >> $LOGFILE
+	        echo "1" > $ZABBIX_FLAG
+            fi
+	else
+	    echo "Файл" $N "не найден в исходной директории!" >> $LOGFILE
+	    echo "1" > $ZABBIX_FLAG
+        fi
+    done
+
+# Контрольная сумма для интерфейсов не подсчитывается, может, сделаю это позже
+  if [ -d $SOURCEDIR/Interface ] ; then
+    cp -r $SOURCEDIR/Interface $DESTDIR
+    echo "Папка интерфейсов успешно скопирована"  >> $LOGFILE
+  else
+    echo "Каталог интерфейсов не скопирован" >> $LOGFILE
+    echo "1" > $ZABBIX_FLAG
+  fi
+fi
