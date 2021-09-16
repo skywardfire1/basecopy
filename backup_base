@@ -32,9 +32,12 @@ if [[ `mount|grep AccessBase` == '' ]] ; then
 else
     if [ -d $DESTDIR ]; then rm -fr $DESTDIR ; fi # Если каталог уже есть, то удаляем его, там неактуальная копия
 
-    mkdir $DESTDIR
+mkdir $DESTDIR
 
-    for N in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde ; do
+echo $DESTDIR
+
+# Пробегаем скриптом сначала по файлам самой базы
+    for N in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde Interface/Admin.mdb  Interface/Log.mdb Interface/Marketing.mdb Interface/MarketN_CRM.mdb Interface/MarketN.mdb Interface/Shops.mdb Interface/Statistics.mdb ; do
 	# Если исходный файл вообще существует, то
 	if [ -e $SOURCEDIR/$N ] ; then
 	    # Копируем его
@@ -59,12 +62,41 @@ else
         fi
     done
 
-# Контрольная сумма для интерфейсов не подсчитывается, может, сделаю это позже
-  if [ -d $SOURCEDIR/Interface ] ; then
-    cp -r $SOURCEDIR/Interface $DESTDIR
-    echo "Папка интерфейсов успешно скопирована"  >> $LOGFILE
-  else
-    echo "Каталог интерфейсов не скопирован" >> $LOGFILE
-    echo "1" > $ZABBIX_FLAG
-  fi
+# Интерфейсы теперь
+# Задаём исходную директорию
+SOURCEDIR=$SOURCEDIR/Interface
+DESTDIR=$DESTDIR/Interface
+
+mkdir $DESTDIR
+
+    for N in Admin.mdb Log.mdb Marketing.mdb MarketN_CRM.mdb MarketN.mdb Shops.mdb Statistics.mdb ; do
+        if [ -e $SOURCEDIR/$N ] ; then # Делаем всё то же самое, что и в предыдущем скрипте
+            cp $SOURCEDIR/$N $DESTDIR
+
+            MD5SUM1=`md5sum -b $SOURCEDIR/$N | awk '{print $1}'`
+            MD5SUM2=`md5sum -b $DESTDIR/$N | awk '{print $1}'`
+
+            if [[ $MD5SUM1 == $MD5SUM2 ]] ; then
+                echo "Интерфейсный файл" $N "успешно скопирован в каталог" $DESTDIR "на сервере" >> $LOGFILE
+            else
+                echo "Контрольные суммы файлов не совпадают!" >> $LOGFILE
+                echo "1" > $ZABBIX_FLAG
+            fi
+        else
+            echo "Файл" $N "не найден в исходной директории!" >> $LOGFILE
+            echo "1" > $ZABBIX_FLAG
+        fi
+    done
 fi
+
+
+
+# Контрольная сумма для интерфейсов не подсчитывается, может, сделаю это позже
+#  if [ -d $SOURCEDIR/Interface ] ; then
+#    cp -r $SOURCEDIR/Interface $DESTDIR
+#    echo "Папка интерфейсов успешно скопирована"  >> $LOGFILE
+#  else
+#    echo "Каталог интерфейсов не скопирован" >> $LOGFILE
+#    echo "1" > $ZABBIX_FLAG
+#  fi
+#fi
