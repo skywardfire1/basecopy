@@ -1,0 +1,25 @@
+#!/bin/bash
+
+#mega-logout
+#mega-login mega@afo.spb.ru `cat /home/sa/mega_secret`
+
+DAY=`date +%u`
+
+case $DAY in
+
+  1 ) mega-rm -fr 01* 02* 03* ;;
+
+  2 ) mega-rm -fr 02* 03* 04* ;;
+
+  3 ) mega-rm -fr 03* 04* 05* ;;
+
+  4 ) mega-rm -fr 04* 05* 01* ;;
+
+  5 ) mega-rm -fr 01* 02* 05* ;;
+
+esac
+
+
+#mega-rm -fr /0`date +%u`_`date +%A`
+
+mega-put -c -q  /srv/raid/base/0`date +%u`_`date +%A`
