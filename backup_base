@@ -1,6 +1,13 @@
 #!/bin/bash
 
-# Версия 0.99
+####################################################################
+####    														####
+####          Скрипт резервного копирования файлов.      		####
+####    					          							####
+####    					Версия 1.0							####
+####															####
+####################################################################
+
 
 # ---------- ПЕРЕМЕННЫЕ ------------
 
@@ -23,42 +30,46 @@ echo "0" > $ZABBIX_FLAG
 # ------------- КОД ---------------
 
 # Пробуем монтировать каталог базы данных, если еще не смонтировано
-if [[ `mount|grep AccessBase` == '' ]] ; then mount /mnt/ab ; fi
+grep -q AccessBase /etc/mtab
+if [[ $? -eq 1 ]] ; then mount /mnt/ab ; fi
 
 # Если по-прежнему не смонтировано, создаём сообщение об ошибке для заббикса, и больше не делаем вообще ничего
-if [[ `mount|grep AccessBase` == '' ]] ; then
+if [[ ! $? -eq 0 ]] ; then # Предыдущей командой была как раз mount, поэтому если $? не равно нулю, то у нас проблемы
     echo "Монтировать каталог базы не удалось" >> $LOGFILE
     echo "1" > $ZABBIX_FLAG
-else
-    if [ -d $DESTDIR ]; then rm -fr $DESTDIR ; fi # Если каталог уже есть, то удаляем его, там неактуальная копия
+	break # Завершение программы, чтобы не делать кучу кода в ветке else
+fi
+
+
+if [ -d $DESTDIR ]; then rm -fr $DESTDIR ; fi # Если каталог уже есть, то удаляем его, там неактуальная копия
 
 mkdir $DESTDIR
 
 # Пробегаем скриптом сначала по файлам самой базы
-    for N in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde ; do
-    # Если исходный файл вообще существует, то
+for N in MarketN_be.mde Marketing_be.mdb MarketN_CRM_be.mde Shops_be.mdb Dohod.mde diagrams.mde ; do
+# Если исходный файл вообще существует, то
 	if [ -e $SOURCEDIR/$N ] ; then
-	    # Копируем его
-            cp $SOURCEDIR/$N $DESTDIR
+		# Копируем его
+		cp $SOURCEDIR/$N $DESTDIR
 
-            # Считаем контрольную сумму исходного файла
-	    MD5SUM1=`md5sum -b $SOURCEDIR/$N | awk '{print $1}'`
+		# Считаем контрольную сумму исходного файла
+		MD5SUM1=`md5sum -b $SOURCEDIR/$N | awk '{print $1}'`
 
-            # И его новой копии
-	    MD5SUM2=`md5sum -b $DESTDIR/$N | awk '{print $1}'`
+		# И его новой копии
+		MD5SUM2=`md5sum -b $DESTDIR/$N | awk '{print $1}'`
 
             # Сравниваем контрольные суммы, делаем соответствующие записи
-            if [[ $MD5SUM1 == $MD5SUM2 ]] ; then
+        if [[ $MD5SUM1 == $MD5SUM2 ]] ; then
 	        echo "Файл" $N "успешно скопирован в каталог" $DESTDIR "на сервере" >> $LOGFILE
 	    else
 	        echo "Контрольные суммы файлов не совпадают!" >> $LOGFILE
 	        echo "1" > $ZABBIX_FLAG
-            fi
+        fi
 	else
 	    echo "Файл" $N "не найден в исходной директории!" >> $LOGFILE
 	    echo "1" > $ZABBIX_FLAG
-        fi
-    done
+    fi
+done
 
 # Интерфейсы теперь обработаем
 
@@ -68,22 +79,20 @@ DESTDIR=$DESTDIR/Interface
 
 mkdir $DESTDIR
 
-    for N in Admin.mdb Log.mdb Marketing.mdb MarketN_CRM.mdb MarketN.mdb Shops.mdb Statistics.mdb ; do
-        if [ -e $SOURCEDIR/$N ] ; then # Делаем всё то же самое, что и в предыдущем скрипте
-            cp $SOURCEDIR/$N $DESTDIR
+for N in Admin.mdb Log.mdb Marketing.mdb MarketN_CRM.mdb MarketN.mdb Shops.mdb Statistics.mdb ; do
+    if [ -e $SOURCEDIR/$N ] ; then # Делаем всё то же самое, что и в предыдущем скрипте
+        cp $SOURCEDIR/$N $DESTDIR
+        MD5SUM1=`md5sum -b $SOURCEDIR/$N | awk '{print $1}'`
+        MD5SUM2=`md5sum -b $DESTDIR/$N | awk '{print $1}'`
 
-            MD5SUM1=`md5sum -b $SOURCEDIR/$N | awk '{print $1}'`
-            MD5SUM2=`md5sum -b $DESTDIR/$N | awk '{print $1}'`
-
-            if [[ $MD5SUM1 == $MD5SUM2 ]] ; then
-                echo "Интерфейсный файл" $N "успешно скопирован в каталог" $DESTDIR "на сервере" >> $LOGFILE
-            else
-                echo "Контрольные суммы файлов не совпадают!" >> $LOGFILE
-                echo "1" > $ZABBIX_FLAG
-            fi
+        if [[ $MD5SUM1 == $MD5SUM2 ]] ; then
+            echo "Интерфейсный файл" $N "успешно скопирован в каталог" $DESTDIR "на сервере" >> $LOGFILE
         else
-            echo "Интерфейсный файл" $N "не найден в исходной директории!" >> $LOGFILE
+            echo "Контрольные суммы файлов не совпадают!" >> $LOGFILE
             echo "1" > $ZABBIX_FLAG
         fi
-    done
-fi
+    else
+            echo "Интерфейсный файл" $N "не найден в исходной директории!" >> $LOGFILE
+            echo "1" > $ZABBIX_FLAG
+    fi
+done
